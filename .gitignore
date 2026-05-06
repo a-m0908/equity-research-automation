@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Regenerable snapshots (re-run data_pipeline / edinet_pipeline)
+data/ohlcv/
+data/fundamentals/
+data/edinet/
