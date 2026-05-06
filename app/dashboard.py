@@ -1,12 +1,13 @@
-import streamlit as st
+from pathlib import Path
+
 import pandas as pd
+import streamlit as st
 
-st.title("Equity Research Automation")
+ROOT = Path(__file__).resolve().parent.parent
 
-factors = pd.read_csv(
-    "data/factors.csv",
-    index_col=0
-)
+st.title("Equity Research — Asia")
+
+factors = pd.read_csv(ROOT / "data" / "factors.csv", index_col=0)
 
 st.dataframe(factors)
 

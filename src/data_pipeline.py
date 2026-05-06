@@ -9,7 +9,20 @@ from pathlib import Path
 import pandas as pd
 import yfinance as yf
 
-TICKERS = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN"]
+# Asia liquid large caps; yfinance suffixes: .T JP, .HK HK, .KS KR, .TW TW, .SI SG, .NS IN
+TICKERS = [
+    "7203.T",  # Toyota (JP)
+    "6758.T",  # Sony Group (JP)
+    "9984.T",  # SoftBank Group (JP)
+    "6861.T",  # Keyence (JP)
+    "0700.HK",  # Tencent (HK)
+    "9988.HK",  # Alibaba (HK)
+    "005930.KS",  # Samsung Electronics (KR)
+    "000660.KS",  # SK Hynix (KR)
+    "2330.TW",  # TSMC (TW)
+    "D05.SI",  # DBS Group (SG)
+    "RELIANCE.NS",  # Reliance Industries (IN)
+]
 START = "2022-01-01"
 END = "2026-01-01"
 
@@ -115,7 +128,8 @@ def download_market_data() -> None:
         return
 
     if isinstance(raw.columns, pd.MultiIndex) and "Close" in raw.columns.get_level_values(0):
-        prices = raw["Close"].dropna()
+        # Keep exchange-specific non-trading days as NaN; only drop rows that are fully empty.
+        prices = raw["Close"].dropna(how="all")
         prices.to_csv(data_dir / "prices.csv")
         _write_ohlcv_per_ticker(raw, ohlcv_dir)
     else:
@@ -130,7 +144,7 @@ def download_market_data() -> None:
         _save_ticker_fundamentals(t, fund_dir)
 
     if not raw.empty and isinstance(raw.columns, pd.MultiIndex):
-        print(raw["Close"].dropna().tail())
+        print(raw["Close"].dropna(how="all").tail())
 
 
 if __name__ == "__main__":

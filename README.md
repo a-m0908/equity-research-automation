@@ -1,10 +1,11 @@
 # equity-research-automation
 
-A small set of tools for US large-cap tech names: build a cross-sectional factor snapshot from daily closing prices, then compare names in a simple dashboard.
+A small set of tools for **Asia-Pacific listed equities** (multiple exchanges via `yfinance`): build a cross-sectional factor snapshot from daily closing prices, then compare names in a simple dashboard.
 
 ## Data scope
 
-- **Tickers**: `AAPL`, `MSFT`, `NVDA`, `GOOGL`, `AMZN` (downloaded together on a shared calendar)
+- **Universe**: liquid large caps across **JP / HK / KR / TW / SG / IN** (see `TICKERS` in `src/data_pipeline.py`). Edit the list to match your research scope.
+- **Currencies**: prices are **local listing currency** per ticker (JPY, HKD, KRW, TWD, SGD, INR, …). Cross-sectional **levels** (e.g. `last_price`) are not comparable across FX; **returns-based factors** are more portable but still embed each market’s calendar and microstructure.
 - **Price series**: Split-adjusted OHLCV from `yfinance` (`auto_adjust=True`), stored at daily frequency
 - **Horizon**: As configured in code, downloads target the range 2022-01-01 through 2026-01-01
 
@@ -29,18 +30,18 @@ Japanese corporate filings indexed by the FSA EDINET API v2 ([disclosure portal 
 
 The API `type` parameter controls **which list/metadata layout** the endpoint returns for that date; it is **not** a filing-kind filter (e.g. it does not mean “annual securities reports only”). Expect **broad same-day submissions** in the payload; narrow filtering must be done client-side using fields in each record.
 
-This path is **independent** of the US ticker list above. Parsing XBRL or downloading individual filing binaries is not implemented here.
+For **official Japanese filings** (有価証券報告書等), complement Yahoo-derived fundamentals with EDINET; this repo only stores the daily **document list** JSON unless you extend it. Parsing XBRL or downloading individual filing binaries is not implemented here.
 
 ## Computed factors
 
 | Column | Definition |
 |--------|------------|
-| `momentum_20d` | 20-trading-day simple return on close (`pct_change(20)`) |
-| `volatility_20d` | 20-day rolling standard deviation of daily returns, annualized (`×√252`) |
-| `last_price` | Latest close in the series |
-| `risk_adjusted_momentum` | `momentum_20d / volatility_20d` (momentum scaled by trailing vol) |
+| `momentum_20d` | 20 **local** trading-day simple return on close (`pct_change(20)` on each ticker’s non-null close series) |
+| `volatility_20d` | 20-day rolling standard deviation of daily returns, annualized (`×√252`), on that same series |
+| `last_price` | Latest close on that ticker’s last session in the sample |
+| `risk_adjusted_momentum` | `momentum_20d / volatility_20d` (undefined vol → NaN) |
 
-Outputs are aggregated as a **latest-date snapshot** per ticker, sorted by descending `risk_adjusted_momentum`.
+Because exchanges **do not share the same holiday calendar**, the wide `prices.csv` has many NaNs per row. Factors are computed **per column** after dropping NaNs so returns and vol are not distorted by other markets’ non-trading days. The snapshot is still a **single ranking table**; the “as of” session date can differ by one or a few days between tickers.
 
 ## Dashboard behavior
 
@@ -55,5 +56,5 @@ Outputs are aggregated as a **latest-date snapshot** per ticker, sorted by desce
 
 ## Data source limitations
 
-- US market and statement tables depend on `yfinance`, not an official exchange vendor feed; availability, terms of use, and latency constraints apply. Intended as a research aid, not a sole source for live trading decisions.
+- Asia listings and statement tables from `yfinance` depend on Yahoo Finance, not an official exchange vendor feed; availability, terms of use, and latency constraints apply. Intended as a research aid, not a sole source for live trading decisions.
 - EDINET access requires a registered subscription key and is subject to FSA rate limits and terms.
